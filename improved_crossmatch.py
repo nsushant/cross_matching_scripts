@@ -4,11 +4,9 @@ import pandas as pd
 import numpy as np 
 import tangos 
 from tangos.examples.mergers import *
-
-#from cross_matching_hydro_and_dmo import group_mergers
 import sys 
 
-
+### Function defs 
 
 def group_mergers(z_merges,h_merges,q_merges):
     #groups the halo objects of merging halos by redshift                                                                                                   
@@ -103,7 +101,6 @@ def group_mergers(z_merges,h_merges,q_merges):
     return merging_halos_grouped_by_z, z_unique_values, qvalues_grouped_by_z, m200_groupd_by_z
 
 
-
 def EuclideanDistance(xyz1,xyz2):
 
     x = xyz1[0] - xyz2[0]
@@ -113,9 +110,10 @@ def EuclideanDistance(xyz1,xyz2):
     return np.sqrt( x**2 + y**2 + z**2 )
 
 
+### Input Processing
+
 haloname = str(sys.argv[1])
 
-# Getting inputs
 if len(str(haloname)) <= 8:
     DMOname = haloname+"_DMO"
     HYDROname = haloname+"_fiducial"
@@ -126,80 +124,70 @@ else:
     HYDROname = HaloNameDecomp[0]+"_fiducial_"+HaloNameDecomp[2]
     haloname = HaloNameDecomp[0]
 
+
+# Start of crossreff 
+
 tangos.core.init_db("/scratch/dp101/shared/EDGE/tangos/"+str(haloname)+".db")
-# DMO data 
+## Get DMO data 
 DMOsim = tangos.get_simulation(DMOname)
 DMOMain = DMOsim.timesteps[-1].halos[0]
 HaloNumsDMO = DMOMain.calculate_for_progenitors("halo_number()")[0][::-1]
-RedshiftsDMOAll= []
+
+# create arrays that associate tangos timesteps with stored redshifts 
+RedshiftsDMO= []
 TimeStepIdxsDMO = []
-print(DMOsim.timesteps[0].halos[:])
 tstepidx = 0
 for t in range(len(DMOsim.timesteps[:])):
     
     if len(DMOsim.timesteps[t].halos[:]) == 0: 
-        RedshiftsDMOAll.append(99999)
-        TimeStepIdxsDMO.append(tstepidx)
         tstepidx+=1
         continue 
     else: 
-        RedshiftsDMOAll.append(DMOsim.timesteps[t].halos[0].calculate("z()"))
+        RedshiftsDMO.append(DMOsim.timesteps[t].halos[0].calculate("z()"))
         TimeStepIdxsDMO.append(tstepidx)
         tstepidx+=1
 
+RedshiftsDMO = np.asarray(RedshiftsDMO)
 TimeStepIdxsDMO = np.asarray(TimeStepIdxsDMO)
-RedshiftsDMOAll = np.asarray(RedshiftsDMOAll)
-RedshiftsTangosMainDMO = DMOMain.calculate_for_progenitors("z()")[0][::-1]
-#print(np.isin(RedshiftsDMOAll,RedshiftsTangosMainDMO))
-RedshiftsDMO = RedshiftsDMOAll[np.isin(RedshiftsDMOAll,np.asarray(RedshiftsTangosMainDMO))]
-TimeStepIdxsDMO = TimeStepIdxsDMO[np.isin(RedshiftsDMOAll,np.asarray(RedshiftsTangosMainDMO))]
 
+# these two arrays should have the same length
 print("DMO:",len(RedshiftsDMO),len(HaloNumsDMO))
 
 
 
-# HYDRO data                                                                                                                         
+## Get HYDRO data 
 HYDROsim = tangos.get_simulation(HYDROname)
 HYDROMain = HYDROsim.timesteps[-1].halos[0]
 HaloNumsHYDRO = HYDROMain.calculate_for_progenitors("halo_number()")[0][::-1]
 RedshiftsTangosMainHYDRO = HYDROMain.calculate_for_progenitors("z()")[0][::-1]
-RedshiftsHYDROAll = []
+RedshiftsHYDRO = []
 TimeStepIdxsHYDRO = []
+TimeStepsHYDRO = []
 tstepidx = 0
 for t in range(len(HYDROsim.timesteps[:])):
     
     if len(HYDROsim.timesteps[t].halos[:]) == 0:
-        RedshiftsHYDROAll.append(99999)
-        TimeStepIdxsHYDRO.append(tstepidx)
         tstepidx+=1
         continue
     else:
-        RedshiftsHYDROAll.append(HYDROsim.timesteps[t].halos[0].calculate("z()"))
+        RedshiftsHYDRO.append(HYDROsim.timesteps[t].halos[0].calculate("z()"))
         TimeStepIdxsHYDRO.append(tstepidx)
+        TimeStepsHYDRO.append(str(HYDROsim.timesteps[t]))
         tstepidx+=1
 
 
-
+TimeStepsHYDRO = np.asarray(TimeStepsHYDRO)
 TimeStepIdxsHYDRO = np.asarray(TimeStepIdxsHYDRO)
-RedshiftsHYDROAll = np.asarray(RedshiftsHYDROAll)
-RedshiftsHYDRO = RedshiftsHYDROAll[np.isin(RedshiftsHYDROAll,np.asarray(RedshiftsTangosMainHYDRO))]
-TimeStepIdxsHYDRO = TimeStepIdxsHYDRO[np.isin(RedshiftsHYDROAll,np.asarray(RedshiftsTangosMainHYDRO))]
+RedshiftsHYDROAll = np.asarray(RedshiftsHYDRO)
+
+# these should have the same lengths
 print("HYDRO:",len(HaloNumsHYDRO),len(RedshiftsHYDRO))
 
 #Processing Merger Tree 
 MergerRedshiftsHYDRO, MergerRatiosHYDRO, MergerHaloObjectsHYDRO = get_mergers_of_major_progenitor(HYDROMain)
 GroupedHalosHYDRO, GroupedRedshiftsHYDRO, GroupedMergerRatiosHYDRO,Groupedm200s = group_mergers(MergerRedshiftsHYDRO, MergerHaloObjectsHYDRO, MergerRatiosHYDRO)
-simpath = "/scratch/dp101/shared/EDGE/"
 
-print(RedshiftsHYDRO,HaloNumsHYDRO)
-
-#idx_of_best_match_DMOHnums = [np.argmin(abs(RedshiftsDMO - zh)) for zh in GroupedRedshiftsHYDRO]
-#idx_of_best_match_hydroHnums = [np.argmin(abs(RedshiftsHYDRO - zh)) for zh in GroupedRedshiftsHYDRO]
-
-
-
-idx_of_best_match_DMO = [np.argmin(abs(RedshiftsDMO - zh)) for zh in GroupedRedshiftsHYDRO]
-idx_of_best_match_hydro = [np.argmin(abs(RedshiftsHYDRO - zh)) for zh in GroupedRedshiftsHYDRO]
+idx_of_best_match_DMO = [np.argmin(RedshiftsDMO[np.where(RedshiftsDMO > zh)]) for zh in GroupedRedshiftsHYDRO]
 
 tstepidxsHYDRO = TimeStepIdxsHYDRO[np.asarray(idx_of_best_match_hydro)] 
 tstepidxsDMO = TimeStepIdxsDMO[np.asarray(idx_of_best_match_DMO)]
@@ -213,20 +201,16 @@ HydroHaloMstars = []
 
 for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
 
-    #index_z_hydro = np.where(zhydro>=zdmo[z])[-1]                                                                                      
-    
-    #print("index-->",index_z_hydro)                                                                                                                 
-    #print(np.where(zhydro>=zdmo[z]))                                                                                                                
-    HYDROMergingHalosThisRedshift = GroupedHalosHYDRO[z][0]
-    #print("hydrohalo:",haloshydro.calculate("output()"))                                                                         
-    #print(idx_of_best_match_hydro[z],len(HYDROsim.timesteps[ idx_of_best_match_hydro[z] - 1 ].halos[:]))
-    MainHaloHYDROThisRedshift = HYDROsim.timesteps[ tstepidxsHYDRO[z] - 3].halos[ int(HaloNumsHYDRO[idx_of_best_match_hydro[z] - 3]) - 1 ]
+    HYDROMergingHalosThisRedshift = GroupedHalosHYDRO[z][0]            
 
-    #print(MainHaloHYDROThisRedshift,HYDROMergingHalosThisRedshift)
-    
+    MergerTimestep = HYDROMergingHaloThisRedshift.timestep
+
+    HYDROTimestepThisMerger = np.where(TimeStepsHYDRO == str(MergerTimestep))[0][0]
+
+    HYDROMainHaloThisRedshift = HYDROsim.timesteps[ HYDROTimestepThisMerger ].halos[ int(HaloNumsHYDRO[HYDROTimestepThisMerger]) - 1 ]
+
     MainHaloDMOThisRedshift = DMOsim.timesteps[ tstepidxsDMO[z] - 1].halos[ int(HaloNumsDMO[ idx_of_best_match_DMO[z] - 1]) - 1 ]
     DMOHalosThisRedshift = list(DMOsim.timesteps[ tstepidxsDMO[z] - 1].halos[:])
-    #[int(HaloNumsDMO[ idx_of_best_match_DMO[z]]):]
 
     DMOHalosThisRedshift.remove(MainHaloDMOThisRedshift)
     dm_mass = []    
@@ -239,7 +223,7 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
         except:
             dm_mass.append(0)
 
-            
+
     
     for MergingHYDROhalo in HYDROMergingHalosThisRedshift:
         print(MergingHYDROhalo)
@@ -252,7 +236,7 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
         except: 
             continue
 
-
+        
         try:
             #mainhalo and merging halo dist in hydro sim
 
