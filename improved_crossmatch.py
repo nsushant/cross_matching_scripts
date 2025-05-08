@@ -209,8 +209,8 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
 
     HYDROMainHaloThisRedshift = HYDROsim.timesteps[ HYDROTimestepThisMerger ].halos[ int(HaloNumsHYDRO[HYDROTimestepThisMerger]) - 1 ]
 
-    MainHaloDMOThisRedshift = DMOsim.timesteps[ tstepidxsDMO[z] - 1].halos[ int(HaloNumsDMO[ idx_of_best_match_DMO[z] - 1]) - 1 ]
-    DMOHalosThisRedshift = list(DMOsim.timesteps[ tstepidxsDMO[z] - 1].halos[:])
+    MainHaloDMOThisRedshift = DMOsim.timesteps[ tstepidxsDMO[z] ].halos[ int(HaloNumsDMO[ idx_of_best_match_DMO[z]]) - 1 ]
+    DMOHalosThisRedshift = list(DMOsim.timesteps[ tstepidxsDMO[z] ].halos[:])
 
     DMOHalosThisRedshift.remove(MainHaloDMOThisRedshift)
     dm_mass = []    
@@ -261,10 +261,7 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
         
         for MassMatch in closest_mass_match:
 
-            try:
-                #MassMatchCen = DMOHalosThisRedshift[MassMatch].calculate("shrink_center")
-                
-                
+            try:                
                 MassMatchCen = DMOHalosThisRedshift[MassMatch].calculate("shrink_center")
             
                 dist = EuclideanDistance(np.asarray(MainHaloDMOThisRedshift["shrink_center"]),np.asarray(MassMatchCen))
@@ -281,7 +278,6 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
         best_match_2_fold = np.argmin(np.abs(np.asarray(DistancesFromMainDMOHalo)-DistanceFromMainHYDROHalo))
 
         hydrohalo_matched.append(MergingHYDROhalo)
-        
         HydroHaloMstars.append(MergingHYDROhalo["M200c_stars"])
         dmohalo_matched.append(DMOHalosThisRedshift[closest_mass_match[int(best_match_2_fold)]])
         #dmohalo_matched.append(d.timesteps[idx_of_best_match[z]].halos[closest_mass_match[0]])
