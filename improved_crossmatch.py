@@ -4,9 +4,11 @@ import pandas as pd
 import numpy as np 
 import tangos 
 from tangos.examples.mergers import *
+from particle_tagging.edge.utils import *
 import sys 
 
 ### Function defs 
+pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
 def group_mergers(z_merges,h_merges,q_merges):
     #groups the halo objects of merging halos by redshift                                                                                                   
@@ -125,9 +127,14 @@ else:
     haloname = HaloNameDecomp[0]
 
 
-# Start of crossreff 
+pynbody_path = '/scratch/dp101/shared/EDGE/'
+    
 
+# Finding best match in tangos db
+
+# Start of crossreff 
 tangos.core.init_db("/scratch/dp101/shared/EDGE/tangos/"+str(haloname)+".db")
+
 ## Get DMO data 
 DMOsim = tangos.get_simulation(DMOname)
 DMOMain = DMOsim.timesteps[-1].halos[0]
@@ -194,7 +201,6 @@ tstepidxsDMO = TimeStepIdxsDMO[np.asarray(idx_of_best_match_DMO)]
 
 
 #print(idx_of_best_match_hydro)
-
 hydrohalo_matched = []
 dmohalo_matched = [] 
 HydroHaloMstars = []
