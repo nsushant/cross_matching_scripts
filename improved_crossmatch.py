@@ -132,7 +132,7 @@ tangos.core.init_db("/scratch/dp101/shared/EDGE/tangos/"+str(haloname)+".db")
 DMOsim = tangos.get_simulation(DMOname)
 DMOMain = DMOsim.timesteps[-1].halos[0]
 HaloNumsDMO = DMOMain.calculate_for_progenitors("halo_number()")[0][::-1]
-
+RedsMainDMO = DMOMain.calculate_for_progenitors("z()")[0][::-1]
 # create arrays that associate tangos timesteps with stored redshifts 
 RedshiftsDMO= []
 TimeStepIdxsDMO = []
@@ -166,7 +166,7 @@ TimeStepsHYDRO = []
 tstepidx = 0
 for t in range(len(HYDROsim.timesteps[:])):
     
-    if len(HYDROsim.timesteps[t].halos[:]) == 0:
+    if (len(HYDROsim.timesteps[t].halos[:]) == 0):
         tstepidx+=1
         continue
     else:
@@ -189,11 +189,11 @@ GroupedHalosHYDRO, GroupedRedshiftsHYDRO, GroupedMergerRatiosHYDRO,Groupedm200s 
 
 idx_of_best_match_DMO = [np.argmin(RedshiftsDMO[np.where(RedshiftsDMO > zh)]) for zh in GroupedRedshiftsHYDRO]
 
-tstepidxsHYDRO = TimeStepIdxsHYDRO[np.asarray(idx_of_best_match_hydro)] 
+#tstepidxsHYDRO = TimeStepIdxsHYDRO[np.asarray(idx_of_best_match_hydro)] 
 tstepidxsDMO = TimeStepIdxsDMO[np.asarray(idx_of_best_match_DMO)]
 
 
-print(idx_of_best_match_hydro)
+#print(idx_of_best_match_hydro)
 
 hydrohalo_matched = []
 dmohalo_matched = [] 
@@ -202,14 +202,19 @@ HydroHaloMstars = []
 for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
 
     HYDROMergingHalosThisRedshift = GroupedHalosHYDRO[z][0]            
+    if (len(HYDROMergingHalosThisRedshift) == 0): 
+        continue
 
-    MergerTimestep = HYDROMergingHaloThisRedshift.timestep
+    MergerTimestep = HYDROMergingHalosThisRedshift[0].timestep
 
     HYDROTimestepThisMerger = np.where(TimeStepsHYDRO == str(MergerTimestep))[0][0]
+    
+    HYDROhalonumidx = np.where(RedshiftsTangosMainHYDRO == RedshiftsHYDRO[HYDROTimestepThisMerger])[0][0]
+    
+    HYDROMainHaloThisRedshift = HYDROsim.timesteps[ TimeStepIdxsHYDRO[HYDROTimestepThisMerger] ].halos[ int(HaloNumsHYDRO[HYDROhalonumidx]) - 1 ]
 
-    HYDROMainHaloThisRedshift = HYDROsim.timesteps[ HYDROTimestepThisMerger ].halos[ int(HaloNumsHYDRO[HYDROTimestepThisMerger]) - 1 ]
-
-    MainHaloDMOThisRedshift = DMOsim.timesteps[ tstepidxsDMO[z] ].halos[ int(HaloNumsDMO[ idx_of_best_match_DMO[z]]) - 1 ]
+    DMOhalonumidx = np.where(RedsMainDMO==RedshiftsDMO[tstepidxsDMO[z]])[0][0]
+    MainHaloDMOThisRedshift = DMOsim.timesteps[ tstepidxsDMO[z] ].halos[ int(HaloNumsDMO[DMOhalonumidx]) - 1 ]
     DMOHalosThisRedshift = list(DMOsim.timesteps[ tstepidxsDMO[z] ].halos[:])
 
     DMOHalosThisRedshift.remove(MainHaloDMOThisRedshift)
@@ -218,9 +223,10 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
     for DMOhalo in DMOHalosThisRedshift:
             
         try: 
-            dm_mass.append(DMOhalo.calculate("M200c"))
+            dm_mass.append(MainHaloDMOThisRedshift.calculate("M200c")/DMOhalo.calculate("M200c"))
 
         except:
+            #print(e)
             dm_mass.append(0)
 
 
@@ -231,30 +237,32 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
             MergingHYDROhalo["M200c_stars"]
             
             if MergingHYDROhalo["M200c_stars"] == 0: 
+                print("No Mstar")
                 continue 
             
-        except: 
+        except Exception as e: 
+            print(e)
             continue
 
         
         try:
             #mainhalo and merging halo dist in hydro sim
+            DistanceFromMainHYDROHalo = EuclideanDistance(np.asarray(HYDROMainHaloThisRedshift["shrink_center"]),np.asarray(MergingHYDROhalo.calculate("shrink_center")))
 
-            DistanceFromMainHYDROHalo = EuclideanDistance(np.asarray(MainHaloHYDROThisRedshift["shrink_center"]),np.asarray(MergingHYDROhalo.calculate("shrink_center")))
-
-            m200MergingHYDROhalo = MergingHYDROhalo["M200c_DM"]
+            m200MergingHYDROhalo = HYDROMainHaloThisRedshift["M200c"]/MergingHYDROhalo["M200c"]
         
-            
             print("added")
 
-        except:
+        except Exception as er:
+            print(er)
             continue
 
 
         # sorts mass difference in M200 in ascending order    
-        closest_mass_match = np.argsort(np.abs(np.asarray(dm_mass) - m200MergingHYDROhalo))[:10]
-        print(closest_mass_match)
+        closest_mass_match = np.argsort(np.abs(np.asarray(dm_mass) - m200MergingHYDROhalo))[:5]
         
+
+        print("ClosestMatches:",closest_mass_match,np.asarray(dm_mass)[closest_mass_match],m200MergingHYDROhalo)
         #print("closest match:",np.log10(np.abs(dm_mass[closest_mass_match])),np.log10(m200MergingHYDROhalo))
 
         DistancesFromMainDMOHalo = []
@@ -266,7 +274,7 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
             
                 dist = EuclideanDistance(np.asarray(MainHaloDMOThisRedshift["shrink_center"]),np.asarray(MassMatchCen))
         
-                print(DMOHalosThisRedshift[MassMatch],dist,DistanceFromMainHYDROHalo,MainHaloHYDROThisRedshift)
+                print(DMOHalosThisRedshift[MassMatch],dist,DistanceFromMainHYDROHalo,HYDROMainHaloThisRedshift)
                 
                 DistancesFromMainDMOHalo.append(dist)
             
@@ -276,7 +284,9 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
                 continue 
             
         best_match_2_fold = np.argmin(np.abs(np.asarray(DistancesFromMainDMOHalo)-DistanceFromMainHYDROHalo))
-
+        
+        print("Match:",DMOHalosThisRedshift[closest_mass_match[int(best_match_2_fold)]])
+        
         hydrohalo_matched.append(MergingHYDROhalo)
         HydroHaloMstars.append(MergingHYDROhalo["M200c_stars"])
         dmohalo_matched.append(DMOHalosThisRedshift[closest_mass_match[int(best_match_2_fold)]])
@@ -288,4 +298,4 @@ print(dmohalo_matched)
 df = pd.DataFrame({"halo":dmohalo_matched,"mstar":HydroHaloMstars,"hydrohalo":hydrohalo_matched})                                                                  
 
 
-df.to_csv("dmo_hydro_crossreffs/TwoFoldCrossreff_"+haloname+".csv")                                                        
+df.to_csv("dmo_hydro_crossreffs/TwoFoldCrossreff_"+DMOname+".csv")                    
