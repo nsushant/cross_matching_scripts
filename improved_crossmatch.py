@@ -6,7 +6,7 @@ import tangos
 from tangos.examples.mergers import *
 from particle_tagging.edge.utils import *
 import sys 
-
+import os
 ### Function defs 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
@@ -231,7 +231,14 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
             #print(e)
             dm_mass.append(0)
 
-
+    # load in HYDRO data 
+    outputHYDRO = str(HYDROsim.timesteps[ TimeStepIdxsHYDRO[HYDROTimestepThisMerger]  ]).split("/")[-1]
+    simfnHYDRO = os.path.join(pynbody_path,HYDROname,outputHYDRO)
+    HYDROParticles = pynbody.load(simfnHYDRO)
+    pynbody.analysis.halo.center(HYDROParticles.halos(int(HaloNumsHYDRO[HYDROhalonumidx]) - 1))
+    HYDROParticles.physical_units()
+    
+    ParticlesLoadedIn = False
     
     for MergingHYDROhalo in HYDROMergingHalosThisRedshift:
         print(MergingHYDROhalo)
@@ -261,14 +268,25 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
 
 
         # sorts mass difference in M200 in ascending order    
-        closest_mass_match = np.argsort(np.abs(np.asarray(dm_mass) - m200MergingHYDROhalo))[:5]
+        closest_mass_match = np.argsort(np.abs(np.asarray(dm_mass) - m200MergingHYDROhalo))[:5]                                  
 
-        output_num
-        # load in DMO pynbody data
-        simfn = join(pynbody_path,DMOname,output_num)
-        DMOParticles = pynbody.load(simfn)
+                
+        MergingHYDROHaloNumber = MergingHYDROhalo.calculate("halo_number()")
+        MergingHYDROHaloParticles = HYDROParticles.halos(int(MergingHYDROHaloNumber)-1)
+
+        px = MergingHYDROHaloParticles.dm["vel"][:,0]*MergingHYDROHaloParticles.dm["mass"]
+        py = MergingHYDROHaloParticles.dm["vel"][:,1]*MergingHYDROHaloParticles.dm["mass"]
+        pz = MergingHYDROHaloParticles.dm["vel"][:,2]*MergingHYDROHaloParticles.dm["mass"]
         
+        PhaseArrayHydro = np.stack((MergingHYDROHaloParticles.d['x'], MergingHYDROHaloParticles.d['y'], MergingHYDROHaloParticles.d['z'], px, py, pz), axis=1)
+        
+        if ParticlesLoadedIn == False:          
+            # load in DMO pynbody data
+            output_num = str(DMOsim.timesteps[ tstepidxsDMO[z] ]).split("/")[-1]
+            simfnDMO = os.path.join(pynbody_path,DMOname,output_num)
+            DMOParticles = pynbody.load(simfnDMO)
 
+        
 
         
         '''
