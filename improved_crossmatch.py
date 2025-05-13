@@ -128,8 +128,6 @@ else:
 
 
 pynbody_path = '/scratch/dp101/shared/EDGE/'
-    
-
 # Finding best match in tangos db
 
 # Start of crossreff 
@@ -159,8 +157,6 @@ TimeStepIdxsDMO = np.asarray(TimeStepIdxsDMO)
 
 # these two arrays should have the same length
 print("DMO:",len(RedshiftsDMO),len(HaloNumsDMO))
-
-
 
 ## Get HYDRO data 
 HYDROsim = tangos.get_simulation(HYDROname)
@@ -266,8 +262,16 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
 
         # sorts mass difference in M200 in ascending order    
         closest_mass_match = np.argsort(np.abs(np.asarray(dm_mass) - m200MergingHYDROhalo))[:5]
+
+        output_num
+        # load in DMO pynbody data
+        simfn = join(pynbody_path,DMOname,output_num)
+        DMOParticles = pynbody.load(simfn)
         
 
+
+        
+        '''
         print("ClosestMatches:",closest_mass_match,np.asarray(dm_mass)[closest_mass_match],m200MergingHYDROhalo)
         #print("closest match:",np.log10(np.abs(dm_mass[closest_mass_match])),np.log10(m200MergingHYDROhalo))
 
@@ -288,7 +292,10 @@ for z in range(len(GroupedRedshiftsHYDRO))[::-1]:
                 print(e)
                 DistancesFromMainDMOHalo.append(999999)
                 continue 
-            
+        '''
+        
+
+        
         best_match_2_fold = np.argmin(np.abs(np.asarray(DistancesFromMainDMOHalo)-DistanceFromMainHYDROHalo))
         
         print("Match:",DMOHalosThisRedshift[closest_mass_match[int(best_match_2_fold)]])
