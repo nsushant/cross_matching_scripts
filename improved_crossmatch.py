@@ -17,13 +17,11 @@ def calculate_Rizzo_energy_distance(X,Y):
     # A lower energy distance = distributions are more simmilar (vice-versa)
     # citation: WIREs Comput Stat 2016, 8:27–38. doi: 10.1002/wics.1375 (see sec. TESTING FOR EQUAL DISTRIBUTIONS)
     
-    d_XY = np.mean(cdist(X, Y))   # Spread between the two distributions of samples
-    d_XX = np.mean(cdist(X, X))   # Spread within distribution X
-    d_YY = np.mean(cdist(Y, Y))   # Spread within distribution Y
+    XYMeanCdist = np.mean(cdist(X, Y))   # Spread between the two distributions of samples
+    XXMeanCdist = np.mean(cdist(X, X))   # Spread within distribution X
+    YYMeanCdist = np.mean(cdist(Y, Y))   # Spread within distribution Y
     
-    return 2 * d_XY - d_XX - d_YY 
-
-
+    return 2 * XYMeanCdist - XXMeanCdist - YYMeanCdist 
     
 
 
