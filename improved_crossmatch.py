@@ -7,6 +7,7 @@ from tangos.examples.mergers import *
 from particle_tagging.edge.utils import *
 import sys 
 import os
+from scipy.spatial.distance import cdist
 ### Function defs 
 pynbody.config["halo-class-priority"] = [pynbody.halo.hop.HOPCatalogue]
 
